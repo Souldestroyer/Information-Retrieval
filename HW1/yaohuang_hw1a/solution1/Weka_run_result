@@ -1,0 +1,90 @@
+##########################################################
+##                  YAO HUANG HW1-A(1)
+##    INFORMATION RETRIEVAL AND WEB AGENTS (600.466)
+##    Solution 1: This part is to show the result by using 
+##    Weka 3.
+##    The first step for this solution is to use the arff. 
+##    generator to generator the dataset of my result based 
+##    on my regular expression rules.
+##
+##            Open this file in text editor
+##########################################################
+
+
+=== Run information ===
+
+Scheme:weka.classifiers.rules.PART -M 2 -C 0.25 -Q 1
+Relation:     yao
+Instances:    44885
+Attributes:   18
+              r1Lowercase
+              r2Paragraph
+              r3R1CommaPeriod
+              r4Default
+              r5Title
+              r6Middlename
+              r7L2commaPeriod
+              r8RightAbbrev
+              r9L1Specified
+              r10R1Specified
+              r11Date
+              r12Shorts
+              r13LeftAbbrev
+              r14PeriodInParenthesis
+              r15R1IsUnited
+              r16R1R2Capital
+              r171IsNumber
+              class
+Test mode:10-fold cross-validation
+
+=== Classifier model (full training set) ===
+
+PART decision list
+------------------
+
+r5Title = 0 AND
+r3R1CommaPeriod = 0 AND
+r1Lowercase = 0 AND
+r6Middlename = 0 AND
+r7L2commaPeriod = 0 AND
+r8RightAbbrev = 0 AND
+r12Shorts = 0 AND
+r14PeriodInParenthesis = 0 AND
+r13LeftAbbrev = 0 AND
+r16R1R2Capital = 0 AND
+r9L1Specified = 0 AND
+r11Date = 0 AND
+r15R1IsUnited = 0: EOS (40705.0/71.0)
+
+: NEOS (4180.0/169.0)
+
+Number of Rules  : 	2
+
+
+Time taken to build model: 0.57 seconds
+
+=== Stratified cross-validation ===
+=== Summary ===
+
+Correctly Classified Instances       44645               99.4653 %
+Incorrectly Classified Instances       240                0.5347 %
+Kappa statistic                          0.968 
+Mean absolute error                      0.0104
+Root mean squared error                  0.0721
+Relative absolute error                  6.2799 %
+Root relative squared error             25.0629 %
+Total Number of Instances            44885     
+
+=== Detailed Accuracy By Class ===
+
+               TP Rate   FP Rate   Precision   Recall  F-Measure   ROC Area  Class
+                 0.983     0.004      0.96      0.983     0.971      0.987    NEOS
+                 0.996     0.017      0.998     0.996     0.997      0.987    EOS
+Weighted Avg.    0.995     0.016      0.995     0.995     0.995      0.987
+
+=== Confusion Matrix ===
+
+     a     b   <-- classified as
+  4011    71 |     a = NEOS
+   169 40634 |     b = EOS
+

@@ -1,0 +1,137 @@
+#!/usr/local/bin/perl
+
+##########################################################
+##                  YAO HUANG HW1-A(2)
+##    INFORMATION RETRIEVAL AND WEB AGENTS (600.466)
+##    Solution 2: This part is to show another method that
+##    could make the result more accurate with pure hand 
+##    calculation by using regular expression.
+##
+##    yaohuang_hw1a.prl < sent.data.train | more
+##
+##  Suggestion: run in a wide window
+##########################################################
+
+
+$L="./classes";
+
+
+##########################################################
+## Create three new classes, which are special, date, 
+## and shorts. 
+##########################################################
+&initialize_set(*abbrevs,"$L/abbrevs"); 
+&initialize_set(*titles,"$L/titles"); 
+&initialize_set(*unlikely_proper_nouns,"$L/unlikely_proper_nouns"); 
+&initialize_set(*timeterms,"$L/timeterms");
+&initialize_set(*special,"$L/special");
+&initialize_set(*date,"$L/date"); 
+&initialize_set(*shorts,"$L/shorts");  
+
+# show the bad result to another txt file.
+open(OUTFILE, ">invalid_rule.txt");
+
+$cnt_1 = 0;
+
+while (<>) {
+   @words = split(' ',$_);
+   ($class,$id,$L3,$L2,$L1,$C,$R1,$R2,$R3,$Llength,$Rlength,$Nspaces) = @words;
+ 
+   if    ($R1 =~ /^[a-z]/) { &ret(1,$class,$id,'NEOS');} # +1 is lower case
+   elsif ($R1 eq "<P>")    { &ret(2,$class,$id,'EOS');}  # +1 is new paragraph
+   elsif ($R1 =~ /^[,.;]/)  { &ret(3,$class,$id,'NEOS');} # +1 is comma, period, semicolon
+   elsif (&classmember($R1,special))   { &ret(10,$class,$id,'EOS');} # Specified start of the sentence
+   elsif (&classmember($R1,date))   { &ret(11,$class,$id,'NEOS');} #date
+   elsif (&classmember($L1,shorts)) { &ret(12,$class,$id,'NEOS');} #shorts
+   elsif ($L1 =~ /^[A-Z][.]+/) {&ret(13,$class,$id,'NEOS');} #left abbreviation
+   elsif (($L1 =~ /^[A-Z]$/) && ($R1 =~ /^[^A-Z]/)) {&ret(16, $class, $id, 'NEOS');}
+   elsif ($L1 =~ /^[a-z][.]+/) {&ret(13,$class,$id,'NEOS');} #left abbreviation
+   elsif ($L2 =~ /^[(]/) {&ret(14,$class,$id,'NEOS');} # period in parenthesis
+   elsif ($R1 eq "United") {&ret(15,$class,$id,'NEOS');} # R1 is United
+   elsif ($R1 =~ /^[A-Z]/) {                             # +1 is capitalized 
+      if (&classmember($L1,titles))   { &ret(5,$class,$id,'NEOS');}  # Mr. Mrs.
+      elsif ($L1 =~ /^[A-Z]$/) {
+        if ($L2 =~ /^[A-Z]/) { &ret(6, $class, $id, 'NEOS');} # middle name
+        elsif ($L2 =~ /^[.]/) {&ret(7, $class, $id, 'NEOS');} # L2 is comma, period
+        elsif ($R2 =~ /^[.]/) {&ret(8, $class, $id, 'NEOS');} # right abbreviation
+      }
+      else { &ret(4,$class,$id,'EOS');}   # default
+   }
+   elsif ($R1 =~ /^[0-9]/) {
+        if ($L1 =~ /^[A-Z]/) {&ret(9, $class, $id, 'NEOS');} # Specified number.
+        elsif ($L1 eq "no") {&ret(9, $class, $id, 'NEOS');} # Specified number.
+        elsif ($L1 =~ /^[a-z]/) {&ret(9, $class, $id, 'EOS')}; # Specified number. 
+   }   
+   else { &ret(0,$class,$id,'EOS');  # +1 is number, etc. 
+   }
+}
+print "\n", "Your score is: ", $correct/($correct+$incorrect), "\n\n";
+
+##########################################################
+##  Print the count of each rule which is used at the end.
+##  Print the usage percentage of each rule.
+##########################################################
+
+for ($where = 1; $where <= 16; $where++) {
+      print "The rule ", $where, " is used ", $rule_count[$where], " times.", "\n";
+      print "The usage percentage of the rule ", $where, " is ", 
+      $rule_count[$where]/($correct+$incorrect), ".", "\n\n"; 
+}
+
+#print "count1 is: ", $count1, "\n"; 
+##########################################################
+## RET - prints full line for errors and keeps score
+##     - $where indicates the rule number responsible for the classification
+##
+##  This is a useful debugging tool, as after each change in
+##  the program one can identify the remaining misclassified
+##  training examples and the patterns responsible for them. 
+##########################################################
+ 
+sub ret {
+   local($where,$trueclass,$id,$givenclass) = @_;
+   
+   if ($trueclass eq $givenclass) {
+      print ".. (at ",$where,") -  ", $_;
+      $correct++;
+      $rule_count[$where] = $count[$where]++;
+   }
+   else {
+      print "XX (at ",$where,") -  ", $_;
+      print OUTFILE ("XX (at ",$where," shoud be ", $trueclass , ") -  ", $_);
+      $incorrect++;
+   }
+   next;
+}
+
+##########################################################
+## CLASSMEMBER - tests for membership of $key in a given set
+##
+##  The \L in $set{"\L$key"} is a perl hack to convert a
+##  string into all lower case for lookup in a word array
+##  insensitive to the capitalization of the original key.
+##########################################################
+
+sub classmember{
+   local($key,*set) = @_;
+
+   return $set{"\L$key"};
+}
+
+##########################################################
+## INITIALIZE_SET - loads named associative array with set members   
+##########################################################
+
+sub initialize_set{
+   local(*set,$where) = @_;
+   
+    open (FILE,$where) || die "Can't open file $where: $!\n";
+
+    while (<FILE>) {
+        chop;
+        $set{$_} = 1;
+    }
+    close (FILE);
+}
+
+

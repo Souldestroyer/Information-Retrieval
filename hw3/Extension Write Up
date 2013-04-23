@@ -1,0 +1,17 @@
+                               		Extension Write Up
+
+                         		Homework #3 Information Retrieval
+
+                               		CS 446 Yao Huang
+
+1. I implemented a simple Bayesian model for sense disambiguation.
+
+2. What I realized?
+
+	1). Created vectors for all of the 4000 contxts based on only using TF. This part is implemented in init_bayesian_doc_vectors function.
+
+	2). Created V_sum1 and V_sum2 for tank, plant, perplace, which is the same as part I. Instead of dividing by the number of vectors, I just let each sum be the summation of weight of term. This part is implemented in bayesian_normalization funtion.
+
+	3). Did LogLikelihood ratio in bayesian_centroid function.
+
+	4). In the bayesian_similarity function, the result is shown as comparation. However the result for either tank, plant, perplace is 0. The reason for causing this bug I think is the wrong input when I calculate $sumofLL. ( $sumofLL += $LLike{$term} * $Vtest{$term} ).

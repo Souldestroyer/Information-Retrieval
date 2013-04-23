@@ -1,0 +1,266 @@
+#!/usr/local/bin/perl -w
+
+use strict;
+
+############################################################
+##                    YAO HUANG HW1-B
+##     INFORMATION RETRIEVAL AND WEB AGENTS (600.466)
+##  
+##  This perl file implements the following features: 
+##  quote, NNHead, table, item, signature, graphic, and 
+##  address detector.
+##
+##  Lines of text are read into a @test_lines array
+##  of lines (with length measured in $numb_lines) until a 
+##  blank line is reached. Then the lines in the previous 
+##  segment are processed.  The array @real_lines stores the
+##  values of the correct classifications for the given in-
+##  put data, useful for comparison with the segment class-
+##  ifications chosen by the program.
+##
+##          yaohuang.hw1b < segment.data.train
+############################################################
+
+my @test_lines = ( );    # the current line that we are testing
+my @real_lines = ( );    # the correct classification for the current line
+my $numb_lines = 0;      # the number of lines in the block that we testing
+
+my $correct   = 0;       # number of correct classifications
+my $incorrect = 0;       # number of incorrect classifications
+my $line      = undef;
+
+
+while (defined ($line = <STDIN>)) {
+    chomp $line;
+
+    if ($line =~ /^#BLANK#/) {
+	&process_segment if $numb_lines;     # if we are at a blank line then
+                                             # it is time to process the pre-
+                                             # vious block
+	print $line, "\n";
+
+	@test_lines  = ( );   # make sure that we clear memory here or else
+	@real_lines  = ( );   #  these arrays may hold old data which will
+	$numb_lines  = 0;     #  screw up calculations of their length
+    }
+    else {
+
+	($test_lines[ $numb_lines ]) = ($line =~ m/^[^\t]+\t(.*)/);
+	($real_lines[ $numb_lines ]) = ($line =~ m/^([^\t]+)\t/  );
+
+	$numb_lines += 1;
+    }
+}
+
+############################################################
+## Process segments by applying specialized detectors/
+## classifiers to the array of the text lines in the segment 
+############################################################
+
+
+sub process_segment {
+    my $cnt;
+    
+    # quote detector
+    if    ( &quoted_detector ) {
+    	for ($cnt = 0; $cnt < scalar @test_lines; $cnt++) {
+    	    &ret( 1, $real_lines[$cnt], "QUOTED", $test_lines[$cnt] );
+    	}
+    }
+    # NNHead detector
+    elsif    ( &nnhead_detector ) {
+        for ($cnt = 0; $cnt < scalar @test_lines; $cnt++) {
+            &ret( 2, $real_lines[$cnt], "NNHEAD", $test_lines[$cnt] );
+        }
+    }
+    # table detector
+    elsif    ( &table_detector ) {
+        for ($cnt = 0; $cnt < scalar @test_lines; $cnt++) {
+            &ret( 3, $real_lines[$cnt], "TABLE", $test_lines[$cnt] );
+        }
+    }
+    # item detector
+    elsif    ( &item_detector ) {
+        for ($cnt = 0; $cnt < scalar @test_lines; $cnt++) {
+            &ret( 4, $real_lines[$cnt], "ITEM", $test_lines[$cnt] );
+        }
+    }
+    # signature detector
+    elsif    ( &signature_detector ) {
+        for ($cnt = 0; $cnt < scalar @test_lines; $cnt++) {
+            &ret( 5, $real_lines[$cnt], "SIG", $test_lines[$cnt] );
+        }
+    }
+    # graphic detector
+    elsif    ( &graphic_detector ) {
+        for ($cnt = 0; $cnt < scalar @test_lines; $cnt++) {
+            &ret( 5, $real_lines[$cnt], "GRAPHIC", $test_lines[$cnt] );
+        }
+    }
+    # address detector
+    elsif    ( &address_detector ) {
+        for ($cnt = 0; $cnt < scalar @test_lines; $cnt++) {
+            &ret( 6, $real_lines[$cnt], "ADDRESS", $test_lines[$cnt] );
+        }
+    }
+    else {
+	for($cnt = 0; $cnt < scalar @test_lines ; $cnt++) {
+	    &ret( 7, $real_lines[$cnt], "PTEXT" , $test_lines[$cnt] );
+    }
+  }
+}
+print "Your score is: ", $correct/($correct+$incorrect), "\n";
+
+
+############################################################
+## This is an incomplete example of what a quotation detector
+## might look like.
+############################################################
+
+    
+sub quoted_detector {
+
+    my $score  = 0;
+    my $weight = 0.75;   # weight is a variable so that it is easy to find
+    my $cnt;             #  and change.
+    
+    for ($cnt = 0; $cnt < scalar @test_lines; $cnt++) {
+        # Regular expression that starts with "@>", or with "@", or with ":", 
+        # or with 0 or more A-Z's and whitespace, or with 0 or more A-Z's and ">"
+        if ( $test_lines[$cnt] =~ /^(@>)/ || $test_lines[$cnt] =~ /^@/ || $test_lines[$cnt] =~ /^(:)/ || $test_lines[$cnt] =~ /^[A-Z]*\s>/ || $test_lines[$cnt] =~ /[A-Z]*>/ ) {
+
+    	    $score++;
+            print $score;
+    	}
+    }
+
+    return (($score / (scalar @test_lines)) > $weight);
+}
+
+sub address_detector {
+    my $score  = 0;   
+    my $cnt;             #  and change.
+
+    # Regular expression that starts with two or more A-Z's and one whitespace and five or more numbers, 
+    # or with five or more numbers and "-" and four or more numbers
+    for ($cnt = 0; $cnt < scalar @test_lines; $cnt++) {
+        if ( $test_lines[$cnt] =~ /[A-Z]{2}(\s)[\d]{5}/ || $test_lines[$cnt] =~ /[\d]{5}[-][\d]{4}/ ) {
+            $score++;
+        }
+    }
+
+    return ($score > 0);
+}
+
+sub signature_detector {
+    my $score  = 0;   
+    my $cnt;             #  and change.
+    # Regular expression that starts with one or more "|", and two or more whitespaces, 
+    # or with two or more "__" and 0 or more whitespaces, 
+    # or with two or more "--" and 0 or more whitespaces
+    for ($cnt = 0; $cnt < scalar @test_lines; $cnt++) {
+        if ( $test_lines[$cnt] =~ /^[|]+(\s)(\s)+/ || $test_lines[$cnt] =~ /^__\s*/ 
+            || $test_lines[$cnt] =~ /^--\s*/) {
+            $score++;
+        }
+    }
+
+    return ($score > 0);
+}
+
+sub nnhead_detector {
+    my $score  = 0;
+    my $weight = 0.65;   # weight is a variable so that it is easy to find
+    my $cnt;             #  and change.
+
+    # Regular expression that starts with any character except whitespace, and ":" and whitespace
+    for ($cnt = 0; $cnt < scalar @test_lines; $cnt++) {
+        if ( $test_lines[$cnt] =~ /^[^\s]+: / ) {
+            $score++;
+        }
+    }
+
+    return (($score / (scalar @test_lines)) > $weight);
+}
+
+sub table_detector {
+    my $score = 0;
+    my $weight = 0.35;
+    my $cnt;
+
+    # Regular expression that starts with any character and "-", 
+    # and follow by two or more whitespaces, or with 0 or more number follow by "." 
+    # and one or more whitespace
+    for ($cnt = 0; $cnt < scalar @test_lines; $cnt++) {
+        if ( $test_lines[$cnt] =~ /^[\w-]+(\s)(\s)+/ || $test_lines[$cnt] =~ /^[0-9]*(\.)(\s)+/
+            || $test_lines[$cnt] =~ /^[A-Z]{2,}/ ) {
+            $score++;
+        }
+    }
+
+    return (($score / (scalar @test_lines)) > $weight);
+}
+
+sub item_detector {
+    my $score = 0;
+    my $weight = 0.6;
+    my $cnt;
+
+    # Regular expression that starts with one or more whitespace, and follow by "-", 
+    # or with a number follow by "." and one or more whitespace, 
+    # or with 0 or more whitespace follow by "(" and one or more numbers and ")", 
+    # or with one or more number follow by "."
+    for ($cnt = 0; $cnt < scalar @test_lines; $cnt++) {
+        if ( $test_lines[$cnt] =~ /^(\s)+[-]/ || $test_lines[$cnt] =~ /^[0-9]\.(\s)+/ 
+            || $test_lines[$cnt] =~ /^(\s)*\([0-9]+\)/ || $test_lines[$cnt] =~ /^[0-9]+\./ ) {
+            $score++;
+        }
+    }
+
+    return (($score / (scalar @test_lines)) > $weight);
+}
+
+sub graphic_detector {
+    my $score = 0;
+    my $weight = 0.5;
+    my $cnt;
+    # Regular expression that the count of non-character is bigger than the count of character
+    for ($cnt = 0; $cnt < scalar @test_lines; $cnt++) {
+        my $temp1 = @{[$test_lines[$cnt] =~ /[^\w]/]};
+        my $temp2 = @{[$test_lines[$cnt] =~ /[\w]/]};
+        if ( $temp1 > $temp2) {
+            $score++;
+        }
+    }
+    return (($score / (scalar @test_lines)) > $weight);
+}
+
+############################################################
+## RET - prints full line for errors and keeps score $rule
+##     - indicates the rule number responsible for the 
+##     - classification
+##
+##  This is a useful debugging tool, as after each change in
+##  the program one can identify the remaining misclassified
+##  training examples and the patterns responsible for them. 
+############################################################
+ 
+sub ret {
+
+    my $rule       = shift;   # which rule did I use here
+    my $trueclass  = shift;   # what is the true sentence class ('NEOS','EOS')
+    my $givenclass = shift;   # what is the sentence class my rule gives
+    my $line       = shift;   # the actual line tested
+
+    if ($trueclass eq $givenclass) {
+
+	#printf(".. (%2d) %s\t%s\t%s\n",$rule,$givenclass,$trueclass,$line);
+	$correct++;
+    }
+    else {
+	
+	printf("XX (%2d) %s\t%s\t%s\n",$rule,$givenclass,$trueclass,$line);
+	$incorrect++;
+    }
+}
+
